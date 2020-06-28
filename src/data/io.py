@@ -1,9 +1,54 @@
 from pathlib import Path
 import numpy as np
-import cv2 as cv
 from pydicom import dcmread
 import napari
 from src.process.range import window_image
+
+import numpy as np
+import ipywidgets as ipyw
+
+
+class ImageSliceViewer:
+    
+    def __init__(self, volume, window=(None,None), renderlib = 'matplotlib'):
+        self.volume = volume
+        self.zmin, self.zmax = window[0], window[1]
+        self.renderlib = renderlib
+        
+        if renderlib == 'matplotlib':
+            import matplotlib.pyplot as plt
+        elif renderlib == 'plotly':
+            import plotly.express as px
+        else:
+            raise ValueError("renderlib must be one of two options: matplotlib | plotly")
+        
+        ipyw.interact(self.view_selection, view=ipyw.RadioButtons(
+            options=['x-y','x-z', 'y-z'], value='x-y', 
+            description='Slice plane selection:', disabled=False,
+            style={'description_width': 'initial'}))
+    
+    def view_selection(self, view):
+        orient = {"x-y": ([1,2,0], False), "x-z": ([0,2,1], [0]), "y-z": ([0,1,2], [0,1])}
+        opts = orient[view]
+        self.vol = np.transpose(self.volume, opts[0])
+        if opts[1]:
+            self.vol = np.flip(self.vol, axis=opts[1])
+        maxZ = self.vol.shape[2] - 1
+        
+        ipyw.interact(self.plot_slice, 
+            z=ipyw.IntSlider(min=0, max=maxZ, step=1, continuous_update=False, 
+            description='Image Slice:'))
+        
+    def plot_slice(self, z):
+        if self.renderlib == "matplotlib":
+            plt.figure(figsize=(10,10))
+            plt.imshow(self.vol[:,:,z], cmap='gray', 
+                vmin=self.zmin, vmax=self.zmax)
+        elif self.renderlib == "plotly":
+            fig = px.imshow(self.vol[:,:,z], color_continuous_scale='gray', width=700, height=700, 
+                zmin=self.zmin, zmax=self.zmax)
+            fig.show()
+
 
 def show_image(*images, space=(1,1,1), window = None):
     viewer = napari.Viewer()
