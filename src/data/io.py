@@ -7,19 +7,22 @@ from src.process.range import window_image
 import numpy as np
 import ipywidgets as ipyw
 
+try:
+    import matplotlib.pyplot as plt
+except: pass
+try:
+    import plotly.graph_objects as go
+except: pass
 
-class ImageSliceViewer:
+
+class VolumeSliceViewer:
     
     def __init__(self, volume, window=(None,None), renderlib = 'matplotlib'):
         self.volume = volume
         self.zmin, self.zmax = window[0], window[1]
         self.renderlib = renderlib
         
-        if renderlib == 'matplotlib':
-            import matplotlib.pyplot as plt
-        elif renderlib == 'plotly':
-            import plotly.express as px
-        else:
+        if renderlib not in ['matplotlib', 'plotly']:
             raise ValueError("renderlib must be one of two options: matplotlib | plotly")
         
         ipyw.interact(self.view_selection, view=ipyw.RadioButtons(
@@ -45,8 +48,12 @@ class ImageSliceViewer:
             plt.imshow(self.vol[:,:,z], cmap='gray', 
                 vmin=self.zmin, vmax=self.zmax)
         elif self.renderlib == "plotly":
-            fig = px.imshow(self.vol[:,:,z], color_continuous_scale='gray', width=700, height=700, 
-                zmin=self.zmin, zmax=self.zmax)
+#             fig = px.imshow(self.vol[:,:,z], color_continuous_scale='gray', width=700, height=700, 
+#                 zmin=self.zmin, zmax=self.zmax)
+#             fig.show()
+            fig = go.Figure(data=go.Image(self.vol[:,:,z],
+                                          zmin=self.zmin, zmax=self.zmax, color_continuous_scale='gray'),
+                            width=700, height=700)
             fig.show()
 
 
